@@ -1,5 +1,5 @@
-Django Storage and Authentication view for https://github.com/ossobv/exactonline
-================================================================================
+Django storage and authentication view for [exactonline](https://github.com/ossobv/exactonline)
+===============================================================================================
 
 Usage
 -----
