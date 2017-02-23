@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Title</title>
+</head>
+<body>
+<div>API took {{ dt }}</div>
+<div>current division: {{ division }}</div>
+<div>API user details:</div>
+<ul>
+	{% for k,v in api_user.items %}
+
+		{% if k == "ThumbnailPicture" %}
+			<img src="data:image/jpg;base64, {{ v }}"/>
+		{% else %}
+			<li>{{ k }}: {{ v }}</li>
+		{% endif %}
+	{% endfor %}
+</ul>
+</body>
+</html>
