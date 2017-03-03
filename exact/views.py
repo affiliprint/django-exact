@@ -59,6 +59,7 @@ class Status(TemplateView):
 
 @csrf_exempt
 def webhook(request):
+	# TODO: show how to validate request
 	logger = logging.getLogger("exact")
 	if request.method != "POST":
 		return HttpResponseNotAllowed(["POST"])

@@ -10,7 +10,6 @@
 <div>API user details:</div>
 <ul>
 	{% for k,v in api_user.items %}
-
 		{% if k == "ThumbnailPicture" %}
 			<img src="data:image/jpg;base64, {{ v }}"/>
 		{% else %}
@@ -18,5 +17,15 @@
 		{% endif %}
 	{% endfor %}
 </ul>
+
+<div>Webhooks:</div>
+{% for webhook in webhooks %}
+<ul>
+	{% for k,v in webhook.items %}
+			<li>{{ k }}: {{ v }}</li>
+	{% endfor %}
+</ul>
+{% endfor %}
+
 </body>
 </html>
