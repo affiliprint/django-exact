@@ -62,6 +62,8 @@ def webhook(request):
 	logger = logging.getLogger("exact")
 	if request.method != "POST":
 		return HttpResponseNotAllowed(["POST"])
+	if len(request.body) == 0:
+		return HttpResponse()
 	try:
 		data = json.loads(request.body)
 		logger.debug(data)
