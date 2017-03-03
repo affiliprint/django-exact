@@ -67,5 +67,6 @@ def webhook(request):
 		logger.debug(data)
 		return HttpResponse(request.body)
 	except Exception as e:
+		logger.debug("error: " + request.body)
 		return HttpResponseBadRequest(e)
 
