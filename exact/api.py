@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
 import logging
 import time
 
-import requests
-from requests import Request
+from requests import Request, Session as ReqSession
 
 from exactonline.api import ExactApi as OriginalExactApi
 
@@ -37,7 +37,7 @@ class Exact:
 	def __init__(self):
 		s, created = Session.objects.get_or_create(**EXACT_SETTINGS)
 		self.session = s
-		self.requests_session = requests.Session()
+		self.requests_session = ReqSession()
 		# set default headers for this session
 		self.requests_session.headers.update({
 			"Accept": "application/json",
@@ -57,6 +57,7 @@ class Exact:
 		prepped = self.requests_session.prepare_request(req)
 		# exact fails/returns 401 if we send an auth header while refreshing
 		prepped.headers["Authorization"] = None
+
 		r = self.requests_session.send(prepped)
 		if r.status_code != 200:
 			raise ExactException("unexpected response while refreshing token: %s", r.text)
@@ -66,17 +67,19 @@ class Exact:
 		# TODO: use access_expiry to avoid an unnecessary request if we know we will need to re-auth
 		self.session.access_expiry = int(time.time()) + int(decoded["expires_in"])
 		self.session.save()
+		# add new token to default headers
 		self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
 		logger.debug("done refreshing token")
 
 	def _send(self, method, resource, data=None, params=None):
 		# to test performance penalty of not using a requests session
 		if not self._REUSE_SESSION:
-			self.requests_session = requests.Session()
+			self.requests_session = ReqSession()
 			self.requests_session.headers.update({
 				"Accept": "application/json",
 				"Authorization": "Bearer %s" % self.session.access_token
 			})
+
 		url = "%s/v1/%s/%s" % (self.session.api_url, self.session.division, resource)
 		request = Request(method, url, data=data, params=params)
 		prepped = self.requests_session.prepare_request(request)
@@ -93,9 +96,14 @@ class Exact:
 			prepped = self.requests_session.prepare_request(request)
 			r = self.requests_session.send(prepped)
 
-		# at this point we tried to re-auth, so anything but 200/OK is unexpected
-		if r.status_code != 200:
+		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
+		# yes: the exact documentation does not mention 204; returned on PUT anyways
+		if r.status_code not in (200, 201, 204):
 			raise ExactException(r.text)
+
+		# don't try to decode json if we got nothing back
+		if r.status_code == 204:
+			return None
 		return r.json()
 
 	def get(self, resource, filter_string="", select="ID,Name,Code"):
@@ -123,6 +131,17 @@ class Exact:
 		r = self._send("GET", resource, params=params)
 		data = r["d"]
 		return data
+
+	def update(self, resource, guid, data):
+		# TODO: add possibility to use a more advanced json encoder
+		resource = "%s(guid'%s')" % (resource, guid)
+		r = self._send("PUT", resource, data=json.dumps(data))
+		return r
+
+	def create(self, resource, data):
+		# TODO: add possibility to use a more advanced json encoder
+		r = self._send("POST", resource, data=json.dumps(data))
+		return r
 
 
 # legacy
