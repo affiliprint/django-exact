@@ -106,7 +106,7 @@ class Exact:
 			return None
 		return r.json()
 
-	def get(self, resource, filter_string="", select="ID,Name,Code"):
+	def get(self, resource, filter_string="", select=""):
 		params = {
 			"$top": 2,
 			"$select": select,
@@ -121,10 +121,10 @@ class Exact:
 			raise MultipleObjectsReturned("api returned multiple objects. params were: %r" % params)
 		return data[0]
 
-	def find(self, resource, filter_string="", select="ID,Name,Code", top=None):
+	def filter(self, resource, filter_string="", select="", limit=""):
 		# TODO: implement pagination
 		params = {
-			"$top": top,
+			"$top": limit,
 			"$select": select,
 			"$filter": filter_string
 		}
