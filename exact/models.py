@@ -26,8 +26,6 @@ class Session(models.Model):
 	authorization_code = models.TextField(blank=True, null=True)
 
 
-
-
 def _default_callback_url():
 	return "https://%s%s" % (Site.objects.get_current().domain, reverse("exact:webhook"))
 
