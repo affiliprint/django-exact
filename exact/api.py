@@ -54,16 +54,31 @@ class Resource(object):
 
 
 # example of simplifying some resources
-class Costcenters(Resource):
-	resource = "hrm/Costcenters"
-
+class GetByCodeMixin(object):
 	def get(self, code=None, filter_string=None, select=None):
 		if code is not None:
 			if filter_string:
 				filter_string += " and Code eq '%s'" % code
 			else:
 				filter_string = "Code eq '%s'" % code
-		return super(Costcenters, self).get(filter_string=filter_string, select=select)
+		return super(GetByCodeMixin, self).get(filter_string=filter_string, select=select)
+
+
+class Accounts(GetByCodeMixin, Resource):
+	resource = "crm/Accounts"
+
+	def get(self, code=None, filter_string=None, select=None):
+		if code is not None:
+			code = "%18s" % code
+		return super(Accounts, self).get(code, filter_string, select)
+
+
+class Costcenters(GetByCodeMixin, Resource):
+	resource = "hrm/Costcenters"
+
+
+class GLAccounts(GetByCodeMixin, Resource):
+	resource = "financial/GLAccounts"
 
 
 class Exact(object):
@@ -86,7 +101,9 @@ class Exact(object):
 			"Prefer": "return=representation",
 		})
 
+		self.accounts = Accounts(self)
 		self.costcenters = Costcenters(self)
+		self.glaccounts = GLAccounts(self)
 
 	def refresh_token(self):
 		logger.debug("refreshing token")
