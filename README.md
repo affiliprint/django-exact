@@ -1,8 +1,14 @@
 API Wrapper and Django app for Exact Online
 ===========================================
 
+* uses connection keep-alive (thanks to the requests library) resulting in huge performance gain. Exact can take over 5 seconds to establish a HTTPS/TLS connection, subsequent requests are faster)
+* transparently handles re-authentication. Exact's OAuth2 tokens are valid for 10 minutes
+* handles pagination. `filter()` returns a generator
+
 Setup
 -----
+
+install && migrate
 
 settings.py:
 ```python
@@ -55,3 +61,8 @@ helpers:
     
 ```
 see [odata.org](http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption) for info on how to use `filter_string`
+
+
+webhooks
+--------
+... are easily created/deleted through /admin/exact/webhook
