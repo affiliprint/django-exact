@@ -30,16 +30,20 @@ Usage
 
 go to `http://localhost:8000/exact/authenticate` to start the OAuth2 dance.
 
-then you can use it like this:
+generic usage:
+first param is the resource.
+see [Exact Online](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx) for available resources
+
 ```python
     from exact.api import Exact
     e = Exact()
-    # generic methods
+    
     # first param is the resource.
     # see https://start.exactonline.nl/docs/HlpRestAPIResources.aspx
     
     # filter returns a generator and handles pagination for you
-    e.filter("crm/Accounts", filter_string=substringof('GmbH', Name) eq true"):
+    for acc in e.filter("crm/Accounts", filter_string="substringof('GmbH', Name) eq true"):
+        pass
 
     # can raise e.DoesNotExist and e.MultipleObjectsReturned
     e.get(resource, filter_string=None, select=None):
@@ -51,6 +55,9 @@ then you can use it like this:
     e.delete(resource, guid)
 ```
 
+see [odata.org](http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption) for info on how to use `filter_string`
+
+
 helpers:
 ```python
     from exact.api import Exact
@@ -60,7 +67,6 @@ helpers:
     e.costcenters.get(code="12345")
     
 ```
-see [odata.org](http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption) for info on how to use `filter_string`
 
 
 webhooks
