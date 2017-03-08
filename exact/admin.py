@@ -9,7 +9,7 @@ from .models import Session, Webhook
 
 class SessionAdmin(admin.ModelAdmin):
 	model = Session
-	list_display = ["id", "rest_url", "base_url", "client_id"]
+	list_display = ["id", "api_url", "redirect_uri", "client_id"]
 admin.site.register(Session, SessionAdmin)
 
 
