@@ -5,9 +5,8 @@ import json
 import logging
 import time
 
+from django.utils.http import urlencode
 from requests import Request, Session as ReqSession
-
-from exactonline.api import ExactApi as OriginalExactApi
 
 from exact.models import Session
 from exact.storage import EXACT_SETTINGS
@@ -105,25 +104,26 @@ class Exact(object):
 		self.costcenters = Costcenters(self)
 		self.glaccounts = GLAccounts(self)
 
-	def refresh_token(self):
-		logger.debug("refreshing token")
-		args = {
+	@property
+	def auth_url(self):
+		params = {
 			'client_id': self.session.client_id,
-			'client_secret': self.session.client_secret,
-			'grant_type': 'refresh_token',
-			'refresh_token': self.session.refresh_token
+			'redirect_uri': self.session.redirect_uri,
+			'response_type': 'code'
 		}
+		return self.session.api_url + "/oauth2/auth?" + urlencode(params)
 
-		req = Request("POST", self.session.api_url + "/oauth2/token", data=args)
+	def _get_or_refresh_token(self, params):
+		req = Request("POST", self.session.api_url + "/oauth2/token", data=params)
 		prepped = self.requests_session.prepare_request(req)
-		# exact fails/returns 401 if we send an auth header while refreshing
+		# exact fails/returns 401 if we send an auth header here
 		prepped.headers["Authorization"] = None
 		# this is also the only request which is not "application/json"
 		prepped.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 		r = self.requests_session.send(prepped)
 		if r.status_code != 200:
-			raise ExactException("unexpected response while refreshing token: %s", r.text)
+			raise ExactException("unexpected response while getting/refreshing token: %s", r.text)
 		decoded = r.json()
 		self.session.access_token = decoded["access_token"]
 		self.session.refresh_token = decoded["refresh_token"]
@@ -132,7 +132,27 @@ class Exact(object):
 		self.session.save()
 		# add new token to default headers
 		self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
-		logger.debug("done refreshing token")
+
+	def get_token(self):
+		logger.debug("getting token")
+		params = {
+			"client_id": self.session.client_id,
+			"client_secret": self.session.client_secret,
+			"code": self.session.authorization_code,
+			"grant_type": 'authorization_code',
+			"redirect_uri":  self.session.redirect_uri
+		}
+		self._get_or_refresh_token(params)
+
+	def refresh_token(self):
+		logger.debug("refreshing token")
+		params = {
+			'client_id': self.session.client_id,
+			'client_secret': self.session.client_secret,
+			'grant_type': 'refresh_token',
+			'refresh_token': self.session.refresh_token
+		}
+		self._get_or_refresh_token(params)
 
 	def _send(self, method, resource, data=None, params=None):
 		# to test performance penalty of not using a requests session
@@ -220,13 +240,3 @@ class Exact(object):
 		resource = "%s(guid'%s')" % (resource, guid)
 		r = self._send("DELETE", resource)
 		return r
-
-
-# legacy
-class ExactApi(OriginalExactApi):
-	def __init__(self, **kwargs):
-		from exact.storage import DjangoStorage
-		storage = DjangoStorage()
-		kwargs["storage"] = storage
-		super(ExactApi, self).__init__(**kwargs)
-

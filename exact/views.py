@@ -12,47 +12,51 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, RedirectView
-from exactonline.api import ExactApi
-from exactonline.resource import GET
 
-from exact.storage import DjangoStorage
+from exact.api import Exact
 
 
 class Authenticate(RedirectView):
 	pattern_name = "exact:status"
 
 	def get_redirect_url(self, *args, **kwargs):
-		storage = DjangoStorage()
-		api = ExactApi(storage=storage)
+		api = Exact()
 		if self.request.GET.get("code"):
-			storage.set_code(self.request.GET.get("code"))
+			api.session.authorization_code = self.request.GET.get("code")
+			api.session.save()
 
-		if not storage.get_code():
-			return api.create_auth_request_url()
+		if not api.session.authorization_code:
+			return api.auth_url
 
-		if not storage.get_access_token():
-			api.request_token(storage.get_code())
+		if not api.session.access_token:
+			api.get_token()
 
 		return super(Authenticate, self).get_redirect_url(*args, **kwargs)
 
 
 class Status(TemplateView):
 	template_name = "exact/status.html"
-	exact = None
+	api = None
 
 	def dispatch(self, request, *args, **kwargs):
-		storage = DjangoStorage()
-		if not storage.get_code() or not storage.get_access_token():
+		api = Exact()
+		if not api.session.authorization_code or not api.session.access_token:
 			return HttpResponseRedirect(reverse("exact:authenticate"))
-		self.exact = ExactApi(storage=storage)
+		self.api = api
 		return super(Status, self).dispatch(request, *args, **kwargs)
 
 	def get_context_data(self, **kwargs):
 		ctx = super(Status, self).get_context_data(**kwargs)
 		start = datetime.now()
-		ctx["division"] = self.exact.storage.get_division()
-		ctx["api_user"] = self.exact.rest(GET("v1/current/Me?$select=*"))[0]
-		ctx["webhooks"] = self.exact.restv1(GET("webhooks/WebhookSubscriptions"))
+		ctx["division"] = self.api.session.division
+
+		# fake division. this endpoint only works with "current"
+		_real_division = self.api.session.division
+		self.api.session.division = "current"
+		ctx["api_user"] = self.api.get("Me")
+		self.api.session.division = _real_division
+
+		ctx["webhooks"] = self.api.filter("webhooks/WebhookSubscriptions")
 		ctx["dt"] = datetime.now() - start
 		return ctx
 
