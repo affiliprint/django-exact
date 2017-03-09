@@ -49,14 +49,18 @@ class Status(TemplateView):
 		ctx = super(Status, self).get_context_data(**kwargs)
 		start = datetime.now()
 		ctx["division"] = self.api.session.division
+		# eval generator to force a possible re-auth
+		ctx["webhooks"] = list(self.api.filter("webhooks/WebhookSubscriptions"))
 
 		# fake division. this endpoint only works with "current"
+		# make sure we are authenticated first, or api.get()/authenticate/refresh will try to save the session
+		# which fails since "current" is not an integer
+		# yeah, it's ugly :)
 		_real_division = self.api.session.division
 		self.api.session.division = "current"
 		ctx["api_user"] = self.api.get("Me")
 		self.api.session.division = _real_division
 
-		ctx["webhooks"] = self.api.filter("webhooks/WebhookSubscriptions")
 		ctx["dt"] = datetime.now() - start
 		return ctx
 
