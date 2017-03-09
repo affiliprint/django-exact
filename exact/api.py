@@ -5,14 +5,31 @@ import json
 import logging
 import time
 
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.http import urlencode
 from requests import Request, Session as ReqSession
 
 from exact.models import Session
-from exact.storage import EXACT_SETTINGS
 
 
 logger = logging.getLogger("exact")
+
+
+def _get(option):
+	try:
+		return getattr(settings, "EXACT_ONLINE_" + option)
+	except AttributeError:
+		raise ImproperlyConfigured("Exact: Setting '%s' not found!" % option)
+
+
+EXACT_SETTINGS = {
+	"redirect_uri": _get("REDIRECT_URI"),
+	"client_id": _get("CLIENT_ID"),
+	"client_secret": _get("CLIENT_SECRET"),
+	"api_url": _get("API_URL"),
+	"division": _get("DIVISION")
+}
 
 
 class ExactException(Exception):

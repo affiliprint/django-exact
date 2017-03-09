@@ -2,27 +2,10 @@
 from __future__ import unicode_literals
 
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from exactonline.storage import ExactOnlineConfig
 
+from exact.api import EXACT_SETTINGS
 from exact.models import Session
-
-
-def get(option):
-	try:
-		return getattr(settings, "EXACT_ONLINE_" + option)
-	except AttributeError:
-		raise ImproperlyConfigured("Exact: Setting '%s' not found!" % option)
-
-
-EXACT_SETTINGS = {
-	"redirect_uri": get("REDIRECT_URI"),
-	"client_id": get("CLIENT_ID"),
-	"client_secret": get("CLIENT_SECRET"),
-	"api_url": get("API_URL"),
-	"division": get("DIVISION")
-}
 
 
 class DjangoStorage(ExactOnlineConfig):
