@@ -2,20 +2,23 @@
 from __future__ import unicode_literals
 
 import json
+import logging
 from datetime import datetime
 
-import logging
+from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseNotAllowed
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, RedirectView
 
 from exact.api import Exact
 
 
+@method_decorator(user_passes_test(lambda u: u.is_staff), name="dispatch")
 class Authenticate(RedirectView):
 	pattern_name = "exact:status"
 
@@ -34,6 +37,7 @@ class Authenticate(RedirectView):
 		return super(Authenticate, self).get_redirect_url(*args, **kwargs)
 
 
+@method_decorator(user_passes_test(lambda u: u.is_staff), name="dispatch")
 class Status(TemplateView):
 	template_name = "exact/status.html"
 	api = None
