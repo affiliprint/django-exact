@@ -97,6 +97,22 @@ class GLAccounts(GetByCodeMixin, Resource):
 	resource = "financial/GLAccounts"
 
 
+class PurchaseEntries(Resource):
+	resource = "purchaseentry/PurchaseEntries"
+
+	def get(self, entry_number=None, filter_string=None, select=None):
+		if entry_number is not None:
+			if filter_string:
+				filter_string += " and EntryNumber eq %d" % entry_number
+			else:
+				filter_string = "EntryNumber eq %d" % entry_number
+		return super(PurchaseEntries, self).get(filter_string, select)
+
+
+class SalesEntries(PurchaseEntries):
+	resource = "salesentry/SalesEntries"
+
+
 class Exact(object):
 	DoesNotExist = DoesNotExist
 	MultipleObjectsReturned = MultipleObjectsReturned
@@ -120,6 +136,8 @@ class Exact(object):
 		self.accounts = Accounts(self)
 		self.costcenters = Costcenters(self)
 		self.glaccounts = GLAccounts(self)
+		self.sales = PurchaseEntries(self)
+		self.purchases = PurchaseEntries(self)
 
 	@property
 	def auth_url(self):
@@ -206,7 +224,7 @@ class Exact(object):
 	def get(self, resource, filter_string=None, select=None):
 		params = {
 			"$top": 2,
-			"$select": select,
+			"$select": select or "*",
 			"$filter": filter_string,
 			"$inlinecount": "allpages"  # this forces a returned dict (otherwise we might get a list with one entry)
 		}
