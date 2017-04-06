@@ -6,12 +6,22 @@
 </head>
 <body>
 <div>API took {{ dt }}</div>
-<div>current division: {{ division }}</div>
 <div>API user details:</div>
 <ul>
 	{% for k,v in api_user.items %}
-		{% if k == "ThumbnailPicture" %}
+		{% if k == "__metadata" %}
+		{% elif k == "ThumbnailPicture" %}
 			<img src="data:image/jpg;base64, {{ v }}"/>
+		{% else %}
+			<li>{{ k }}: {{ v }}</li>
+		{% endif %}
+	{% endfor %}
+</ul>
+
+<div>Division:</div>
+<ul>
+	{% for k,v in division.items %}
+		{% if k == "__metadata" %}
 		{% else %}
 			<li>{{ k }}: {{ v }}</li>
 		{% endif %}
@@ -20,11 +30,13 @@
 
 <div>Webhooks:</div>
 {% for webhook in webhooks %}
-<ul>
-	{% for k,v in webhook.items %}
+	<ul>
+		{% for k,v in webhook.items %}
 			<li>{{ k }}: {{ v }}</li>
-	{% endfor %}
-</ul>
+		{% endfor %}
+	</ul>
+{% empty %}
+	<span>No Webhooks configured.</span>
 {% endfor %}
 
 </body>
