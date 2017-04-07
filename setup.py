@@ -9,8 +9,8 @@ setup(
 	# https://packaging.python.org/en/latest/single_source_version.html
 	version='0.1',
 
-	description='Django storage and authentication view for exactonline',
-	long_description='Django storage and authentication view for https://github.com/ossobv/exactonline',
+	description='API Wrapper and Django app for Exact Online',
+	# long_description='',
 
 	# The project's main homepage.
 	url='https://github.com/affiliprint/django-exact',
