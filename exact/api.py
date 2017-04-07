@@ -214,7 +214,7 @@ class Exact(object):
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
-			raise ExactException(r.text)
+			raise ExactException(response)
 
 		# don't try to decode json if we got nothing back
 		if response.status_code == 204:
