@@ -55,14 +55,8 @@ class Status(TemplateView):
 		# eval generator to force a possible re-auth
 		ctx["webhooks"] = list(self.api.filter("webhooks/WebhookSubscriptions"))
 
-		# fake division. this endpoint only works with "current"
-		# make sure we are authenticated first, or api.get()/authenticate/refresh will try to save the session
-		# which fails since "current" is not an integer
-		# yeah, it's ugly :)
-		_real_division = self.api.session.division
-		self.api.session.division = "current"
-		ctx["api_user"] = self.api.get("Me", select="FullName,Email,ThumbnailPicture")
-		self.api.session.division = _real_division
+		response = self.api.raw("GET", "/v1/current/Me", params={"$select": "FullName,Email,ThumbnailPicture"})
+		ctx["api_user"] = response.json()["d"]["results"][0]
 
 		ctx["division"] = self.api.get(
 			"hrm/Divisions",

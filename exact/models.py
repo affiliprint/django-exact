@@ -48,5 +48,3 @@ class Webhook(models.Model):
 
 	# division = models.PositiveIntegerField(_("Division"), help_text=_("Company inside Exact Online."))
 	guid = models.CharField(max_length=36, blank=True, null=True)
-
-

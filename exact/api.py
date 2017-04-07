@@ -204,22 +204,36 @@ class Exact(object):
 		request = Request(method, url, data=data, params=params)
 		prepped = self.requests_session.prepare_request(request)
 
-		r = self.requests_session.send(prepped)
-		if r.status_code == 401:
+		response = self.requests_session.send(prepped)
+		if response.status_code == 401:
 			self.refresh_token()
 			# prepare again to use new auth-header
 			prepped = self.requests_session.prepare_request(request)
-			r = self.requests_session.send(prepped)
+			response = self.requests_session.send(prepped)
 
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
-		if r.status_code not in (200, 201, 204):
+		if response.status_code not in (200, 201, 204):
 			raise ExactException(r.text)
 
 		# don't try to decode json if we got nothing back
-		if r.status_code == 204:
+		if response.status_code == 204:
 			return None
-		return r.json()
+		return response.json()
+
+	def raw(self, method, path, data=None, params=None, re_auth=True):
+		url = "%s%s" % (self.session.api_url, path)
+		request = Request(method, url, data=data, params=params)
+		prepped = self.requests_session.prepare_request(request)
+
+		response = self.requests_session.send(prepped)
+		if re_auth and response.status_code == 401:
+			self.refresh_token()
+			# prepare again to use new auth-header
+			prepped = self.requests_session.prepare_request(request)
+			response = self.requests_session.send(prepped)
+
+		return response
 
 	def get(self, resource, filter_string=None, select=None):
 		params = {
