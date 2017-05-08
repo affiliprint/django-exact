@@ -214,7 +214,7 @@ class Exact(object):
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
-			raise ExactException(response)
+			raise ExactException(response, response.text, prepped.path_url, prepped.body)
 
 		# don't try to decode json if we got nothing back
 		if response.status_code == 204:
@@ -251,9 +251,10 @@ class Exact(object):
 			raise MultipleObjectsReturned("api returned multiple objects. params were: %r" % params)
 		return data[0]
 
-	def filter(self, resource, filter_string=None, select=None, order_by=None, limit=None):
+	def filter(self, resource, filter_string=None, select=None, order_by=None, limit=None, expand=None):
 		params = {
 			"$filter": filter_string,
+			"$expand": expand,
 			"$select": select,
 			"$orderby": order_by,
 			"$top": limit,
