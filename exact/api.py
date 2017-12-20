@@ -152,7 +152,7 @@ class Exact(object):
 		req = Request("POST", self.session.api_url + "/oauth2/token", data=params)
 		prepped = self.requests_session.prepare_request(req)
 		# exact fails/returns 401 if we send an auth header here
-		prepped.headers["Authorization"] = None
+		del prepped.headers["Authorization"]
 		# this is also the only request which is not "application/json"
 		prepped.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
