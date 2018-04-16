@@ -156,6 +156,7 @@ class Exact(object):
 		# this is also the only request which is not "application/json"
 		prepped.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
+		logger.debug("sending request: %s" % prepped.url)
 		r = self.requests_session.send(prepped)
 		if r.status_code != 200:
 			raise ExactException("unexpected response while getting/refreshing token: %s", r.text)
@@ -204,11 +205,13 @@ class Exact(object):
 		request = Request(method, url, data=data, params=params)
 		prepped = self.requests_session.prepare_request(request)
 
+		logger.debug("sending request: %s" % prepped.url)
 		response = self.requests_session.send(prepped)
 		if response.status_code == 401:
 			self.refresh_token()
 			# prepare again to use new auth-header
 			prepped = self.requests_session.prepare_request(request)
+			logger.debug("sending request: %s" % prepped.url)
 			response = self.requests_session.send(prepped)
 
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
@@ -226,11 +229,13 @@ class Exact(object):
 		request = Request(method, url, data=data, params=params)
 		prepped = self.requests_session.prepare_request(request)
 
+		logger.debug("sending request: %s" % prepped.url)
 		response = self.requests_session.send(prepped)
 		if re_auth and response.status_code == 401:
 			self.refresh_token()
 			# prepare again to use new auth-header
 			prepped = self.requests_session.prepare_request(request)
+			logger.debug("sending request: %s" % prepped.url)
 			response = self.requests_session.send(prepped)
 
 		return response
@@ -269,6 +274,7 @@ class Exact(object):
 		while next_url:
 			request = Request("GET", next_url)
 			prepped = self.requests_session.prepare_request(request)
+			logger.debug("sending request: %s" % prepped.url)
 			response = self.requests_session.send(prepped).json()
 			next_url = response["d"].get("__next")
 			results = response["d"]["results"]
