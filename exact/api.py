@@ -33,14 +33,16 @@ EXACT_SETTINGS = {
 
 
 class ExactException(Exception):
+	def __init__(self, message, response):
+		super(ExactException, self).__init__(message)
+		self.response = response
+
+
+class DoesNotExist(Exception):
 	pass
 
 
-class DoesNotExist(ExactException):
-	pass
-
-
-class MultipleObjectsReturned(ExactException):
+class MultipleObjectsReturned(Exception):
 	pass
 
 
@@ -157,10 +159,11 @@ class Exact(object):
 		prepped.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 		logger.debug("sending request: %s" % prepped.url)
-		r = self.requests_session.send(prepped)
-		if r.status_code != 200:
-			raise ExactException("unexpected response while getting/refreshing token: %s", r.text)
-		decoded = r.json()
+		response = self.requests_session.send(prepped)
+		if response.status_code != 200:
+			msg = "unexpected response while getting/refreshing token: %s" % r.text
+			raise ExactException(msg, response)
+		decoded = response.json()
 		self.session.access_token = decoded["access_token"]
 		self.session.refresh_token = decoded["refresh_token"]
 		# TODO: use access_expiry to avoid an unnecessary request if we know we will need to re-auth
@@ -217,11 +220,13 @@ class Exact(object):
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
-			raise ExactException(response, response.text, prepped.path_url, prepped.body)
+			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d" % response.status_code
+			raise ExactException(msg, response)
 
 		# don't try to decode json if we got nothing back
 		if response.status_code == 204:
 			return None
+		# TODO: handle the case where they send a 200, with HTML "we're under maintenance". yes, they do that
 		return response.json()
 
 	def raw(self, method, path, data=None, params=None, re_auth=True):
