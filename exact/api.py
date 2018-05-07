@@ -221,6 +221,7 @@ class Exact(object):
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
 			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d" % response.status_code
+			logger.debug("%s\n%s" % (msg, response.text))
 			raise ExactException(msg, response)
 
 		# don't try to decode json if we got nothing back
