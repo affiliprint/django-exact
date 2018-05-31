@@ -220,7 +220,7 @@ class Exact(object):
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
-			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d\n\n"\
+			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d\n\n%s"
 			msg %= (response.status_code, response.text)
 			logger.debug("%s\n%s" % (msg, response.text))
 			raise ExactException(msg, response)
