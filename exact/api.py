@@ -54,7 +54,7 @@ class Resource(object):
 	def __init__(self, api):
 		self._api = api
 
-	# i am not using *args, and **kwargs (would be more generic) for make autocomplete/hints in IDE work better
+	# i am not using *args, and **kwargs (would be more generic) to make autocomplete/hints in IDE work better
 	def filter(self, filter_string=None, select=None, order_by=None, limit=None):
 		return self._api.filter(self.resource, filter_string=filter_string, select=select, order_by=order_by, limit=limit)
 
@@ -179,7 +179,7 @@ class Exact(object):
 			"client_secret": self.session.client_secret,
 			"code": self.session.authorization_code,
 			"grant_type": 'authorization_code',
-			"redirect_uri":  self.session.redirect_uri
+			"redirect_uri": self.session.redirect_uri
 		}
 		self._get_or_refresh_token(params)
 
@@ -220,7 +220,8 @@ class Exact(object):
 		# at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
-			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d" % response.status_code
+			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d\n\n"\
+			msg %= (response.status_code, response.text)
 			logger.debug("%s\n%s" % (msg, response.text))
 			raise ExactException(msg, response)
 
