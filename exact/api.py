@@ -95,6 +95,10 @@ class Costcenters(GetByCodeMixin, Resource):
 	resource = "hrm/Costcenters"
 
 
+class Costunits(GetByCodeMixin, Resource):
+	resource = "hrm/Costunits"
+
+
 class GLAccounts(GetByCodeMixin, Resource):
 	resource = "financial/GLAccounts"
 
@@ -137,6 +141,7 @@ class Exact(object):
 
 		self.accounts = Accounts(self)
 		self.costcenters = Costcenters(self)
+		self.costunits = Costunits(self)
 		self.glaccounts = GLAccounts(self)
 		self.sales = PurchaseEntries(self)
 		self.purchases = PurchaseEntries(self)
