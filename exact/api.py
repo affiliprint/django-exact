@@ -166,7 +166,7 @@ class Exact(object):
 		logger.debug("sending request: %s" % prepped.url)
 		response = self.requests_session.send(prepped)
 		if response.status_code != 200:
-			msg = "unexpected response while getting/refreshing token: %s" % r.text
+			msg = "unexpected response while getting/refreshing token: %s" % response.text
 			raise ExactException(msg, response)
 		decoded = response.json()
 		self.session.access_token = decoded["access_token"]

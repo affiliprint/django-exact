@@ -21,7 +21,7 @@ EXACT_ONLINE_DIVISION = 1234567
 
 urls.py:
 ```python
-url(r'^exact/', include('exact.urls'))
+url(r'^exact/', include(('exact.urls', 'exact'), namespace='exact'))
 ```
 
 
@@ -37,10 +37,10 @@ see [Exact Online](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx) f
 ```python
     from exact.api import Exact
     e = Exact()
-    
+
     # first param is the resource.
     # see https://start.exactonline.nl/docs/HlpRestAPIResources.aspx
-    
+
     # filter returns a generator and handles pagination for you
     for acc in e.filter("crm/Accounts", filter_string="substringof('GmbH', Name) eq true"):
         pass
@@ -65,7 +65,7 @@ helpers:
     e.accounts.get(code="1234")
     e.glaccounts.get(code="1234")
     e.costcenters.get(code="12345")
-    
+
 ```
 
 
