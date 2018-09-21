@@ -1,3 +1,7 @@
+0.2.5
+-----
+* fix error reporting when getting/refreshing token fails. thanks @fijter
+
 0.2.4
 -----
 * add Costunit resource
