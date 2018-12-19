@@ -143,7 +143,7 @@ class Exact(object):
 		self.costcenters = Costcenters(self)
 		self.costunits = Costunits(self)
 		self.glaccounts = GLAccounts(self)
-		self.sales = PurchaseEntries(self)
+		self.sales = SalesEntries(self)
 		self.purchases = PurchaseEntries(self)
 
 	@property
