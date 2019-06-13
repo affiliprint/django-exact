@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import time
+from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -29,14 +30,21 @@ EXACT_SETTINGS = {
     "client_id": _get("CLIENT_ID"),
     "client_secret": _get("CLIENT_SECRET"),
     "api_url": _get("API_URL"),
-    "division": _get("DIVISION")
+    "division": _get("DIVISION"),
 }
 
 
 class ExactException(Exception):
-    def __init__(self, message, response):
+    def __init__(self, message, response, limits):
         super(ExactException, self).__init__(message)
         self.response = response
+        self.limits = limits
+
+    def __str__(self):
+        return "%s, limit reached? %s" % (
+            super(ExactException, self).__str__(),
+            self.is_limit_reached,
+        )
 
 
 class DoesNotExist(Exception):
@@ -45,6 +53,33 @@ class DoesNotExist(Exception):
 
 class MultipleObjectsReturned(Exception):
     pass
+
+
+class Limits(object):
+    def __init__(self):
+        self.daily_limit = None
+        self.daily_limit_remaining = None
+        self.daily_limit_reset = None
+        self.minutely_limit = None
+        self.minutely_limit_remaining = None
+
+    @property
+    def is_limit_reached(self):
+        return self.minutely_limit_remaining == 0 or self.daily_limit_remaining == 0
+
+    def update(self, response):
+        if (
+            "X-RateLimit-Limit" in response.headers
+        ):  # errors responses do not carry these headers
+            self.daily_limit = int(response.headers["X-RateLimit-Limit"])
+            self.daily_limit_remaining = int(response.headers["X-RateLimit-Remaining"])
+            self.daily_limit_reset = datetime.utcfromtimestamp(
+                int(response.headers["X-RateLimit-Reset"]) / 1000
+            )
+            self.minutely_limit = int(response.headers["X-RateLimit-Minutely-Limit"])
+            self.minutely_limit_remaining = int(
+                response.headers["X-RateLimit-Minutely-Remaining"]
+            )
 
 
 class Resource(object):
@@ -57,7 +92,13 @@ class Resource(object):
 
     # i am not using *args, and **kwargs (would be more generic) to make autocomplete/hints in IDE work better
     def filter(self, filter_string=None, select=None, order_by=None, limit=None):
-        return self._api.filter(self.resource, filter_string=filter_string, select=select, order_by=order_by, limit=limit)
+        return self._api.filter(
+            self.resource,
+            filter_string=filter_string,
+            select=select,
+            order_by=order_by,
+            limit=limit,
+        )
 
     def get(self, filter_string=None, select=None):
         return self._api.get(self.resource, filter_string=filter_string, select=select)
@@ -80,7 +121,9 @@ class GetByCodeMixin(object):
                 filter_string += " and Code eq '%s'" % code
             else:
                 filter_string = "Code eq '%s'" % code
-        return super(GetByCodeMixin, self).get(filter_string=filter_string, select=select)
+        return super(GetByCodeMixin, self).get(
+            filter_string=filter_string, select=select
+        )
 
 
 class Accounts(GetByCodeMixin, Resource):
@@ -133,12 +176,16 @@ class Exact(object):
         self.session = s
         self.requests_session = ReqSession()
         # set default headers for this session
-        self.requests_session.headers.update({
-            "Accept": "application/json",
-            "Authorization": "Bearer %s" % self.session.access_token,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        })
+        self.requests_session.headers.update(
+            {
+                "Accept": "application/json",
+                "Authorization": "Bearer %s" % self.session.access_token,
+                "Content-Type": "application/json",
+                "Prefer": "return=representation",
+            }
+        )
+
+        self.limits = Limits()
 
         self.accounts = Accounts(self)
         self.costcenters = Costcenters(self)
@@ -150,9 +197,9 @@ class Exact(object):
     @property
     def auth_url(self):
         params = {
-            'client_id': self.session.client_id,
-            'redirect_uri': self.session.redirect_uri,
-            'response_type': 'code'
+            "client_id": self.session.client_id,
+            "redirect_uri": self.session.redirect_uri,
+            "response_type": "code",
         }
         return self.session.api_url + "/oauth2/auth?" + urlencode(params)
 
@@ -167,8 +214,10 @@ class Exact(object):
         logger.debug("sending request: %s" % prepped.url)
         response = self.requests_session.send(prepped)
         if response.status_code != 200:
-            msg = "unexpected response while getting/refreshing token: %s" % response.text
-            raise ExactException(msg, response)
+            msg = (
+                "unexpected response while getting/refreshing token: %s" % response.text
+            )
+            raise ExactException(msg, response, self.limits)
         decoded = response.json()
         self.session.access_token = decoded["access_token"]
         self.session.refresh_token = decoded["refresh_token"]
@@ -176,7 +225,9 @@ class Exact(object):
         self.session.access_expiry = int(time.time()) + int(decoded["expires_in"])
         self.session.save()
         # add new token to default headers
-        self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
+        self.requests_session.headers["Authorization"] = (
+            "Bearer %s" % self.session.access_token
+        )
 
     def get_token(self):
         logger.debug("getting token")
@@ -184,52 +235,62 @@ class Exact(object):
             "client_id": self.session.client_id,
             "client_secret": self.session.client_secret,
             "code": self.session.authorization_code,
-            "grant_type": 'authorization_code',
-            "redirect_uri": self.session.redirect_uri
+            "grant_type": "authorization_code",
+            "redirect_uri": self.session.redirect_uri,
         }
         self._get_or_refresh_token(params)
 
     def refresh_token(self):
         logger.debug("refreshing token")
         params = {
-            'client_id': self.session.client_id,
-            'client_secret': self.session.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': self.session.refresh_token
+            "client_id": self.session.client_id,
+            "client_secret": self.session.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": self.session.refresh_token,
         }
         self._get_or_refresh_token(params)
 
-    def _send(self, method, resource, data=None, params=None):
+    def _perform_request(self, method, url, data=None, params=None, re_auth=True):
         # to test performance penalty of not using a requests session
         if not self._REUSE_SESSION:
             self.requests_session = ReqSession()
-            self.requests_session.headers.update({
-                "Accept": "application/json",
-                "Authorization": "Bearer %s" % self.session.access_token,
-                "Content-Type": "application/json",
-                "Prefer": "return=representation",
-            })
+            self.requests_session.headers.update(
+                {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer %s" % self.session.access_token,
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",
+                }
+            )
 
-        url = "%s/v1/%s/%s" % (self.session.api_url, self.session.division, resource)
         request = Request(method, url, data=data, params=params)
         prepped = self.requests_session.prepare_request(request)
 
-        logger.debug("sending request: %s" % prepped.url)
+        logger.debug("Performing %s request: %s" % (method, prepped.url))
+
         response = self.requests_session.send(prepped)
-        if response.status_code == 401:
+        if re_auth and response.status_code == 401:
             self.refresh_token()
             # prepare again to use new auth-header
             prepped = self.requests_session.prepare_request(request)
             logger.debug("sending request: %s" % prepped.url)
             response = self.requests_session.send(prepped)
 
+        self.limits.update(response)
+
+        return response
+
+    def _send(self, method, resource, data=None, params=None):
+
+        url = "%s/v1/%s/%s" % (self.session.api_url, self.session.division, resource)
+        response = self._perform_request(method, url, data=data, params=params)
         # at this point we tried to re-auth, so anything but 200/OK, 201/Created or 204/no content is unexpected
         # yes: the exact documentation does not mention 204; returned on PUT anyways
         if response.status_code not in (200, 201, 204):
             msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d\n\n%s"
             msg %= (response.status_code, response.text)
             logger.debug("%s\n%s" % (msg, response.text))
-            raise ExactException(msg, response)
+            raise ExactException(msg, response, self.limits)
 
         # don't try to decode json if we got nothing back
         if response.status_code == 204:
@@ -239,26 +300,16 @@ class Exact(object):
 
     def raw(self, method, path, data=None, params=None, re_auth=True):
         url = "%s%s" % (self.session.api_url, path)
-        request = Request(method, url, data=data, params=params)
-        prepped = self.requests_session.prepare_request(request)
-
-        logger.debug("sending request: %s" % prepped.url)
-        response = self.requests_session.send(prepped)
-        if re_auth and response.status_code == 401:
-            self.refresh_token()
-            # prepare again to use new auth-header
-            prepped = self.requests_session.prepare_request(request)
-            logger.debug("sending request: %s" % prepped.url)
-            response = self.requests_session.send(prepped)
-
-        return response
+        return self._perform_request(
+            method, url, path, data=data, params=params, re_auth=re_auth
+        )
 
     def get(self, resource, filter_string=None, select=None):
         params = {
             "$top": 2,
             "$select": select or "*",
             "$filter": filter_string,
-            "$inlinecount": "allpages"  # this forces a returned dict (otherwise we might get a list with one entry)
+            "$inlinecount": "allpages",  # this forces a returned dict (otherwise we might get a list with one entry)
         }
         r = self._send("GET", resource, params=params)
 
@@ -266,17 +317,27 @@ class Exact(object):
         if len(data) == 0:
             raise DoesNotExist("recource not found. params were: %r" % params)
         if len(data) > 1:
-            raise MultipleObjectsReturned("api returned multiple objects. params were: %r" % params)
+            raise MultipleObjectsReturned(
+                "api returned multiple objects. params were: %r" % params
+            )
         return data[0]
 
-    def filter(self, resource, filter_string=None, select=None, order_by=None, limit=None, expand=None):
+    def filter(
+        self,
+        resource,
+        filter_string=None,
+        select=None,
+        order_by=None,
+        limit=None,
+        expand=None,
+    ):
         params = {
             "$filter": filter_string,
             "$expand": expand,
             "$select": select,
             "$orderby": order_by,
             "$top": limit,
-            "$inlinecount": "allpages"
+            "$inlinecount": "allpages",
         }
         response = self._send("GET", resource, params=params)
         results = response["d"]["results"]
@@ -285,10 +346,7 @@ class Exact(object):
 
         next_url = response["d"].get("__next")
         while next_url:
-            request = Request("GET", next_url)
-            prepped = self.requests_session.prepare_request(request)
-            logger.debug("sending request: %s" % prepped.url)
-            response = self.requests_session.send(prepped).json()
+            response = self._perform_request("GET", next_url)
             next_url = response["d"].get("__next")
             results = response["d"]["results"]
             for r in results:
