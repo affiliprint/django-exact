@@ -7,6 +7,7 @@ import time
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.http import urlencode
 from requests import Request, Session as ReqSession
 
@@ -294,14 +295,12 @@ class Exact(object):
                 yield r
 
     def create(self, resource, data):
-        # TODO: add possibility to use a more advanced json encoder
-        r = self._send("POST", resource, data=json.dumps(data))
+        r = self._send("POST", resource, data=json.dumps(data, cls=DjangoJSONEncoder))
         return r["d"]
 
     def update(self, resource, guid, data):
-        # TODO: add possibility to use a more advanced json encoder
         resource = "%s(guid'%s')" % (resource, guid)
-        r = self._send("PUT", resource, data=json.dumps(data))
+        r = self._send("PUT", resource, data=json.dumps(data, cls=DjangoJSONEncoder))
         return r
 
     def delete(self, resource, guid):
