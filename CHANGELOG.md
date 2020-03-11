@@ -1,3 +1,7 @@
+0.3.0
+-----
+* remove support for python 2.7
+
 0.2.5
 -----
 * fix error reporting when getting/refreshing token fails. thanks @fijter

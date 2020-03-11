@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import json
 import logging
 import time
+from datetime import datetime
+from requests import Request, Session as ReqSession
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.http import urlencode
-from requests import Request, Session as ReqSession
+
 
 from exact.models import Session
 
@@ -36,6 +36,25 @@ class ExactException(Exception):
 	def __init__(self, message, response):
 		super(ExactException, self).__init__(message)
 		self.response = response
+
+	@property
+	def limits(self):
+		# errors responses do not carry these headers
+		if "X-RateLimit-Limit" in self.response.headers:
+			# let's hope all X-RateLimit-* headers are present
+			return {
+				"daily": int(self.response.headers["X-RateLimit-Limit"]),
+				"daily_remaining": int(self.response.headers["X-RateLimit-Remaining"]),
+				"daily_reset": datetime.utcfromtimestamp(int(self.response.headers["X-RateLimit-Reset"]) / 1000),
+				"minutely": int(self.response.headers["X-RateLimit-Minutely-Limit"]),
+				"minutely_remaining": int(self.response.headers["X-RateLimit-Minutely-Remaining"])
+			}
+
+	@property
+	def limits_reached(self):
+		if self.limits and (self.limits["daily_remaining"] == 0 or self.limits["minutely_remaining"] == 0):
+			return True
+		return False
 
 
 class DoesNotExist(Exception):
