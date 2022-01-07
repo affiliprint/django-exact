@@ -4,6 +4,8 @@ import logging
 import time
 from datetime import datetime
 from requests import Request, Session as ReqSession
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -149,7 +151,16 @@ class Exact(object):
 	def __init__(self):
 		s, created = Session.objects.get_or_create(**EXACT_SETTINGS)
 		self.session = s
+
+		retry_strategy = Retry(
+			total=5,
+			backoff_factor=10,
+			status_forcelist=[429],
+			method_whitelist=["GET", "POST", "PUT"]
+		)
+		adapter = HTTPAdapter(max_retries=retry_strategy)
 		self.requests_session = ReqSession()
+		self.requests_session.mount("https://", adapter)
 		# set default headers for this session
 		self.requests_session.headers.update({
 			"Accept": "application/json",
