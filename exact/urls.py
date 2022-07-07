@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from django.conf.urls import url
+from django.urls import path
 
 from .views import Authenticate, Status, webhook
 
 urlpatterns = [
-	url(r'^authenticate$', Authenticate.as_view(), name="authenticate"),
-	url(r'^status', Status.as_view(), name="status"),
-	url(r'^webhook', webhook, name="webhook"),
+	path('authenticate', Authenticate.as_view(), name="authenticate"),
+	path('status', Status.as_view(), name="status"),
+	path('webhook', webhook, name="webhook"),
 ]
