@@ -1,3 +1,11 @@
+0.5.0
+-----
+* Django 4.0 compatibility
+
+0.4.0
+-----
+* Retry (with backoff) when hitting 429s/Rate limiting
+
 0.3.0
 -----
 * remove support for python 2.7
