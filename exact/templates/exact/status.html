@@ -10,7 +10,7 @@
 <ul>
 	{% for k,v in api_user.items %}
 		{% if k == "__metadata" %}
-		{% elif k == "ThumbnailPicture" and  %}
+		{% elif k == "ThumbnailPicture" %}
 			{% if v %}<img src="data:image/jpg;base64, {{ v }}"/>{% endif %}
 		{% else %}
 			<li>{{ k }}: {{ v }}</li>
