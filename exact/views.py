@@ -56,11 +56,6 @@ class Status(TemplateView):
 		response = self.api.raw("GET", "/v1/current/Me", params={"$select": "FullName,Email,ThumbnailPicture"})
 		ctx["api_user"] = response.json()["d"]["results"][0]
 
-		ctx["division"] = self.api.get(
-			"hrm/Divisions",
-			filter_string="Code eq %d" % self.api.session.division,
-			select="Code,CustomerName,Description,Country"
-		)
 		ctx["dt"] = datetime.now() - start
 		return ctx
 
