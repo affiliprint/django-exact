@@ -29,7 +29,8 @@ EXACT_SETTINGS = {
 	"redirect_uri": _get("REDIRECT_URI"),
 	"client_id": _get("CLIENT_ID"),
 	"client_secret": _get("CLIENT_SECRET"),
-	"api_url": _get("API_URL")
+	"api_url": _get("API_URL"),
+	"division": _get("DIVISION")
 }
 
 
@@ -151,14 +152,7 @@ class Exact(object):
 	# so reusing it speeds things up a lot. (~200ms per call)
 	_REUSE_SESSION = True
 
-	def __init__(self, division=None):
-		if division is None:
-			try:
-				division = _get("DIVISION")  # get from django settings
-			except ImproperlyConfigured:
-				raise ImproperlyConfigured("The division parameter must be provided or set in the settings.")
-
-		self.division = division
+	def __init__(self):
 		s, created = Session.objects.get_or_create(**EXACT_SETTINGS)
 		self.session = s
 
@@ -249,7 +243,7 @@ class Exact(object):
 				"Prefer": "return=representation",
 			})
 
-		url = "%s/v1/%s/%s" % (self.session.api_url, self.division, resource)
+		url = "%s/v1/%s/%s" % (self.session.api_url, self.session.division, resource)
 		request = Request(method, url, data=data, params=params)
 		prepped = self.requests_session.prepare_request(request)
 
