@@ -10,7 +10,6 @@ class Session(models.Model):
 	client_id = models.CharField(max_length=255, help_text=_("Your OAuth2/Exact App client ID"))
 	client_secret = models.CharField(max_length=255, help_text=_("Your OAuth2/Exact App client secret"))
 	redirect_uri = models.URLField(_("OAuth2 redirect URI"), help_text=_("Callback URL on your server. https://example.com/exact/authenticate"))
-	division = models.IntegerField()
 
 	access_expiry = models.IntegerField(blank=True, null=True)
 	access_token = models.TextField(blank=True, null=True)
