@@ -1,3 +1,9 @@
+0.6.0
+-----
+* Add ability to override division setting on API instantiation (thanks to @Alex-Sichkar)
+* add check if thumbnail exist in auth status template (thanks to @Alex-Sichkar)
+* raise new ExactAuthException when getting/refreshing auth token fails (thanks to @Alex-Sichkar)
+
 0.5.0
 -----
 * Django 4.0 compatibility
