@@ -11,7 +11,7 @@
 	{% for k,v in api_user.items %}
 		{% if k == "__metadata" %}
 		{% elif k == "ThumbnailPicture" %}
-			<img src="data:image/jpg;base64, {{ v }}"/>
+			{% if v %}<img src="data:image/jpg;base64, {{ v }}"/>{% endif %}
 		{% else %}
 			<li>{{ k }}: {{ v }}</li>
 		{% endif %}
