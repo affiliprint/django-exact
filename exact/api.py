@@ -59,6 +59,10 @@ class ExactException(Exception):
 		return False
 
 
+class ExactAuthException(ExactException):
+	pass
+
+
 class DoesNotExist(Exception):
 	pass
 
@@ -202,7 +206,7 @@ class Exact(object):
 		response = self.requests_session.send(prepped)
 		if response.status_code != 200:
 			msg = "unexpected response while getting/refreshing token: %s" % response.text
-			raise ExactException(msg, response)
+			raise ExactAuthException(msg, response)
 		decoded = response.json()
 		self.session.access_token = decoded["access_token"]
 		self.session.refresh_token = decoded["refresh_token"]
