@@ -1,3 +1,7 @@
+0.7.0
+-----
+* Remove old storage for [exactonline](https://github.com/ossobv/exactonline)
+
 0.6.0
 -----
 * Add ability to override division setting on API instantiation (thanks to @Alex-Sichkar)

@@ -72,8 +72,3 @@ helpers:
 webhooks
 --------
 ... are easily created/deleted through /admin/exact/webhook
-
-what about [exactonline](https://github.com/ossobv/exactonline)?
-----------------------------------------------------------------
-this used to be a django based storage and auth view for that.
-see storage.py for a compatible storage backend that does use django instead of an INI file
