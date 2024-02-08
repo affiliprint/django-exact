@@ -22,3 +22,6 @@
 
 npm-debug.log
 .DS_Store
+
+/dist
+/django_exact.egg-info
