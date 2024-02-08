@@ -1,6 +1,7 @@
 0.7.0
 -----
 * Remove old storage for [exactonline](https://github.com/ossobv/exactonline)
+* ignore "django_exact.egg-info" and "dist" folders in .gitignore
 
 0.6.0
 -----
