@@ -12,9 +12,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.http import urlencode
 
 
-from exact.models import Session
-
-
 logger = logging.getLogger("exact")
 
 
@@ -153,6 +150,8 @@ class Exact(object):
 	_REUSE_SESSION = True
 
 	def __init__(self, division=None):
+		from exact.models import Session
+	
 		if division is None:
 			division = EXACT_SETTINGS["division"]
 		self.division = division
