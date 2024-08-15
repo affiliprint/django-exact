@@ -1,3 +1,7 @@
+0.8.0
+-----
+* fix compatibility issue with urllib3 >=2.0.0
+
 0.7.0
 -----
 * Remove old storage for [exactonline](https://github.com/ossobv/exactonline)

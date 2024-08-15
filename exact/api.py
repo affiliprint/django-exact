@@ -165,7 +165,7 @@ class Exact(object):
 			total=5,
 			backoff_factor=10,
 			status_forcelist=[429],
-			method_whitelist=["GET", "POST", "PUT"]
+			allowed_methods=["GET", "POST", "PUT"]
 		)
 		adapter = HTTPAdapter(max_retries=retry_strategy)
 		self.requests_session = ReqSession()
