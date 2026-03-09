@@ -9,6 +9,7 @@ from urllib3.util.retry import Retry
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import transaction
 from django.utils.http import urlencode
 
 
@@ -194,7 +195,7 @@ class Exact(object):
 		}
 		return self.session.api_url + "/oauth2/auth?" + urlencode(params)
 
-	def _get_or_refresh_token(self, params):
+	def _get_or_refresh_token(self, params, session_obj):
 		req = Request("POST", self.session.api_url + "/oauth2/token", data=params)
 		prepped = self.requests_session.prepare_request(req)
 		# exact fails/returns 401 if we send an auth header here
@@ -208,13 +209,12 @@ class Exact(object):
 			msg = "unexpected response while getting/refreshing token: %s" % response.text
 			raise ExactAuthException(msg, response)
 		decoded = response.json()
-		self.session.access_token = decoded["access_token"]
-		self.session.refresh_token = decoded["refresh_token"]
-		# TODO: use access_expiry to avoid an unnecessary request if we know we will need to re-auth
-		self.session.access_expiry = int(time.time()) + int(decoded["expires_in"])
-		self.session.save()
-		# add new token to default headers
-		self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
+		session_obj.access_token = decoded["access_token"]
+		session_obj.refresh_token = decoded["refresh_token"]
+		session_obj.access_expiry = int(time.time()) + int(decoded["expires_in"])
+		session_obj.save()
+		# update default headers for this session instance
+		self.requests_session.headers["Authorization"] = "Bearer %s" % session_obj.access_token
 
 	def get_token(self):
 		logger.debug("getting token")
@@ -222,20 +222,41 @@ class Exact(object):
 			"client_id": self.session.client_id,
 			"client_secret": self.session.client_secret,
 			"code": self.session.authorization_code,
-			"grant_type": 'authorization_code',
-			"redirect_uri": self.session.redirect_uri
+			"grant_type": "authorization_code",
+			"redirect_uri": self.session.redirect_uri,
 		}
-		self._get_or_refresh_token(params)
+		self._get_or_refresh_token(params, self.session)
 
 	def refresh_token(self):
 		logger.debug("refreshing token")
-		params = {
-			'client_id': self.session.client_id,
-			'client_secret': self.session.client_secret,
-			'grant_type': 'refresh_token',
-			'refresh_token': self.session.refresh_token
-		}
-		self._get_or_refresh_token(params)
+		# use transaction and select_for_update to prevent token reuse
+		try:
+			with transaction.atomic():
+				# lock the row to ensure only one worker performs the refresh
+				session_from_db = Session.objects.select_for_update().get(pk=self.session.pk)
+
+				# if token already refreshed by another process, just sync and return
+				if session_from_db.access_token != self.session.access_token:
+					logger.debug("token already refreshed by another process")
+					self.session = session_from_db
+					self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
+					return
+
+				params = {
+					"client_id": session_from_db.client_id,
+					"client_secret": session_from_db.client_secret,
+					"grant_type": "refresh_token",
+					"refresh_token": session_from_db.refresh_token,
+				}
+
+				self._get_or_refresh_token(params, session_from_db)
+				self.session = session_from_db
+
+		except Exception as e:
+			if isinstance(e, ExactAuthException):
+				raise
+			logger.error("unexpected error during token refresh: %s" % str(e))
+			raise ExactException("failed to refresh token due to network or db lock issue", e)
 
 	def _send(self, method, resource, data=None, params=None):
 		# to test performance penalty of not using a requests session
