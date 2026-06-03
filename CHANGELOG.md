@@ -1,3 +1,8 @@
+0.9.0
+-----
+* Ensure no duplicate or concurrent use of the one-time-use session token. Thanks to @Alex-Sichkar.
+* remove setup.py in favor of pyproject.toml
+
 0.8.0
 -----
 * fix compatibility issue with urllib3 >=2.0.0

@@ -1,6 +1,39 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-exact"
+version = "0.9.0"
+description = "API Wrapper and Django app for Exact Online"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Malte Böhme, Affiliprint Deutschland GmbH", email = "malte.boehme@affiliprint.com" },
+]
+keywords = ["django", "exact", "exact-online", "api", "wrapper"]
+classifiers = [
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "Django",
+    "requests",
+    "urllib3>=1.26,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/affiliprint/django-exact"
+Repository = "https://github.com/affiliprint/django-exact"
+Issues = "https://github.com/affiliprint/django-exact/issues"
+
+[tool.setuptools.packages.find]
+
+[tool.setuptools]
+include-package-data = true
