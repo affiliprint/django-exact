@@ -49,6 +49,11 @@ class ExactTest(TestCase):
 			self.api.get("crm/Accounts")
 		self.assertIsNone(cm.exception.error_message)
 
+	def test_html_with_200_is_unavailable(self):
+		self.mock_send(make_response(200, "<html>maintenance</html>"))
+		with self.assertRaises(ExactUnavailable):
+			self.api.get("crm/Accounts")
+
 	def test_error_message(self):
 		error = {"error": {"code": "", "message": {"lang": "", "value": "VAT\r\ninvalid"}}}
 		self.mock_send(make_response(400, error))

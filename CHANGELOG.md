@@ -1,10 +1,18 @@
 0.10.0
 ------
 
-- new `ExactUnavailable(ExactException)`: exact answered with a 5xx.
-- new `ExactException.error_message`: exact's error text, `None` if there is none.
+**Backwards incompatible:**
+
+- A non-JSON answer (e.g. exact's maintenance page, which comes with a 200) raises
+  `ExactUnavailable` instead of `requests.JSONDecodeError` (a `ValueError`). Code catching
+  `ValueError`/`JSONDecodeError` around API calls has to catch `ExactUnavailable` instead.
 - "failed to refresh token" errors have `response=None` instead of the causing exception, which is
   now chained as `__cause__`. Fixes `ExactException.limits` failing with `AttributeError`.
+
+Other changes:
+
+- new `ExactUnavailable(ExactException)`: exact answered with a 5xx or non-JSON content.
+- new `ExactException.error_message`: exact's error text, `None` if there is none.
 - response bodies in exception messages are cut off after 500 characters.
 - add a test suite: `python runtests.py`
 

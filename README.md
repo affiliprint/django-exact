@@ -64,7 +64,7 @@ errors (all subclasses of `ExactException`, which carries the `response` and `er
     try:
         e.create(resource, data)
     except ExactUnavailable:
-        pass  # 5xx, try again later
+        pass  # 5xx or maintenance page, try again later
     except ExactAuthException as ex:
         print(ex.error_message)  # getting/refreshing the token failed, e.g. "Refresh token is invalid."
     except ExactException as ex:

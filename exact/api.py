@@ -88,7 +88,16 @@ class ExactAuthException(ExactException):
 
 
 class ExactUnavailable(ExactException):
-	"""Exact answered with a 5xx. Retry later."""
+	"""Exact answered with a 5xx or non-JSON (e.g. its maintenance page with a 200). Retry later."""
+
+
+def _json(response):
+	try:
+		return response.json()
+	except ValueError as e:
+		# exact's "we're under maintenance" HTML page comes with a 200
+		msg = "expected JSON, got %s: %s" % (response.headers.get("Content-Type"), response.text[:500])
+		raise ExactUnavailable(msg, response) from e
 
 
 class DoesNotExist(Exception):
@@ -323,8 +332,7 @@ class Exact(object):
 		# don't try to decode json if we got nothing back
 		if response.status_code == 204:
 			return None
-		# TODO: handle the case where they send a 200, with HTML "we're under maintenance". yes, they do that
-		return response.json()
+		return _json(response)
 
 	def raw(self, method, path, data=None, params=None, re_auth=True):
 		url = "%s%s" % (self.session.api_url, path)
@@ -377,7 +385,7 @@ class Exact(object):
 			request = Request("GET", next_url)
 			prepped = self.requests_session.prepare_request(request)
 			logger.debug("sending request: %s" % prepped.url)
-			response = self.requests_session.send(prepped).json()
+			response = _json(self.requests_session.send(prepped))
 			next_url = response["d"].get("__next")
 			results = response["d"]["results"]
 			for r in results:
