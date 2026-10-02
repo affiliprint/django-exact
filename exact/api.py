@@ -307,7 +307,9 @@ class Exact(object):
 			})
 
 		url = "%s/v1/%s/%s" % (self.session.api_url, self.division, resource)
-		request = Request(method, url, data=data, params=params)
+		return self._send_request(Request(method, url, data=data, params=params))
+
+	def _send_request(self, request):
 		prepped = self.requests_session.prepare_request(request)
 
 		logger.debug("sending request: %s" % prepped.url)
@@ -382,10 +384,7 @@ class Exact(object):
 
 		next_url = response["d"].get("__next")
 		while next_url:
-			request = Request("GET", next_url)
-			prepped = self.requests_session.prepare_request(request)
-			logger.debug("sending request: %s" % prepped.url)
-			response = _json(self.requests_session.send(prepped))
+			response = self._send_request(Request("GET", next_url))
 			next_url = response["d"].get("__next")
 			results = response["d"]["results"]
 			for r in results:
