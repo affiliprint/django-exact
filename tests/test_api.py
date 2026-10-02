@@ -1,4 +1,5 @@
 import json
+import time
 from unittest import mock
 
 from requests import ConnectionError, Response
@@ -42,6 +43,18 @@ class ExactTest(TestCase):
 		self.assertEqual(self.api.get("crm/Accounts"), {"ID": 1})
 		session = Session.objects.get()
 		self.assertEqual((session.access_token, session.refresh_token), ("new-access", "new-refresh"))
+
+	def test_use_token_refreshed_by_another_process(self):
+		Session.objects.update(access_token="other-access", access_expiry=int(time.time()) + 600)
+		self.mock_send(make_response(401), make_response(200, RESULT))
+		self.assertEqual(self.api.get("crm/Accounts"), {"ID": 1})
+		self.assertEqual(self.api.requests_session.headers["Authorization"], "Bearer other-access")
+
+	def test_refresh_when_token_refreshed_by_another_process_expired(self):
+		Session.objects.update(access_token="other-access", access_expiry=int(time.time()) - 60)
+		self.mock_send(make_response(401), make_response(200, TOKEN_OK), make_response(200, RESULT))
+		self.assertEqual(self.api.get("crm/Accounts"), {"ID": 1})
+		self.assertEqual(Session.objects.get().access_token, "new-access")
 
 	def test_5xx_is_unavailable(self):
 		self.mock_send(make_response(503, "<html>maintenance</html>"))

@@ -271,8 +271,9 @@ class Exact(object):
 				# lock the row to ensure only one worker performs the refresh
 				session_from_db = Session.objects.select_for_update().get(pk=self.session.pk)
 
-				# if token already refreshed by another process, just sync and return
-				if session_from_db.access_token != self.session.access_token:
+				# if token already refreshed by another process and still valid, just sync and return
+				refreshed_elsewhere = session_from_db.access_token != self.session.access_token
+				if refreshed_elsewhere and (session_from_db.access_expiry or 0) > time.time():
 					logger.debug("token already refreshed by another process")
 					self.session = session_from_db
 					self.requests_session.headers["Authorization"] = "Bearer %s" % self.session.access_token
