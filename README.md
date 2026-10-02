@@ -57,6 +57,20 @@ see [Exact Online](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx) f
 
 see [odata.org](http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption) for info on how to use `filter_string`
 
+errors (all subclasses of `ExactException`, which carries the `response` and `error_message`):
+```python
+    from exact.api import ExactAuthException, ExactException, ExactUnavailable
+
+    try:
+        e.create(resource, data)
+    except ExactUnavailable:
+        pass  # 5xx, try again later
+    except ExactAuthException as ex:
+        print(ex.error_message)  # getting/refreshing the token failed, e.g. "Refresh token is invalid."
+    except ExactException as ex:
+        print(ex.error_message)  # e.g. a validation error
+```
+
 
 helpers:
 ```python

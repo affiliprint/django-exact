@@ -1,49 +1,69 @@
+0.10.0
+------
+
+- new `ExactUnavailable(ExactException)`: exact answered with a 5xx.
+- new `ExactException.error_message`: exact's error text, `None` if there is none.
+- "failed to refresh token" errors have `response=None` instead of the causing exception, which is
+  now chained as `__cause__`. Fixes `ExactException.limits` failing with `AttributeError`.
+- response bodies in exception messages are cut off after 500 characters.
+- add a test suite: `python runtests.py`
+
 0.9.0
 -----
-* Ensure no duplicate or concurrent use of the one-time-use session token. Thanks to @Alex-Sichkar.
-* remove setup.py in favor of pyproject.toml
+
+- Ensure no duplicate or concurrent use of the one-time-use session token. Thanks to @Alex-Sichkar.
+- remove setup.py in favor of pyproject.toml
 
 0.8.0
 -----
-* fix compatibility issue with urllib3 >=2.0.0
+
+- fix compatibility issue with urllib3 >=2.0.0
 
 0.7.0
 -----
-* Remove old storage for [exactonline](https://github.com/ossobv/exactonline)
-* ignore "django_exact.egg-info" and "dist" folders in .gitignore
+
+- Remove old storage for [exactonline](https://github.com/ossobv/exactonline)
+- ignore "django_exact.egg-info" and "dist" folders in .gitignore
 
 0.6.0
 -----
-* Add ability to override division setting on API instantiation (thanks to @Alex-Sichkar)
-* add check if thumbnail exist in auth status template (thanks to @Alex-Sichkar)
-* raise new ExactAuthException when getting/refreshing auth token fails (thanks to @Alex-Sichkar)
+
+- Add ability to override division setting on API instantiation (thanks to @Alex-Sichkar)
+- add check if thumbnail exist in auth status template (thanks to @Alex-Sichkar)
+- raise new ExactAuthException when getting/refreshing auth token fails (thanks to @Alex-Sichkar)
 
 0.5.0
 -----
-* Django 4.0 compatibility
+
+- Django 4.0 compatibility
 
 0.4.0
 -----
-* Retry (with backoff) when hitting 429s/Rate limiting
+
+- Retry (with backoff) when hitting 429s/Rate limiting
 
 0.3.0
 -----
-* remove support for python 2.7
+
+- remove support for python 2.7
 
 0.2.5
 -----
-* fix error reporting when getting/refreshing token fails. thanks @fijter
+
+- fix error reporting when getting/refreshing token fails. thanks @fijter
 
 0.2.4
 -----
-* add Costunit resource
+
+- add Costunit resource
 
 0.2.1 - 0.2.3
 -------------
-* improved logging/reporting when Exact errors out
+
+- improved logging/reporting when Exact errors out
 
 0.2.0
 -----
-* Added `response` attribute to `ExactException`
-* `DoesNotExist` and `MultipleObjectsReturned` are no longer subclasses of `ExactException`
 
+- Added `response` attribute to `ExactException`
+- `DoesNotExist` and `MultipleObjectsReturned` are no longer subclasses of `ExactException`

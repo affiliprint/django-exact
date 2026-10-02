@@ -38,12 +38,35 @@ EXACT_SETTINGS = {
 class ExactException(Exception):
 	def __init__(self, message, response):
 		super(ExactException, self).__init__(message)
+		# None if there was no response (e.g. a network error while refreshing the token)
 		self.response = response
+
+	@property
+	def error_message(self):
+		"""Exact's error text (REST API or OAuth2 token endpoint), None if there is none."""
+		if self.response is None:
+			return None
+		try:
+			data = self.response.json()
+		except ValueError:
+			return None
+		if not isinstance(data, dict):
+			return None
+		error = data.get("error")
+		if isinstance(error, dict):
+			message = error.get("message")
+			if isinstance(message, dict):
+				message = message.get("value")
+		else:
+			message = data.get("error_description") or error
+		if isinstance(message, str) and message:
+			return message.replace("\r\n", "\n")
+		return None
 
 	@property
 	def limits(self):
 		# errors responses do not carry these headers
-		if "X-RateLimit-Limit" in self.response.headers:
+		if self.response is not None and "X-RateLimit-Limit" in self.response.headers:
 			# let's hope all X-RateLimit-* headers are present
 			return {
 				"daily": int(self.response.headers["X-RateLimit-Limit"]),
@@ -62,6 +85,10 @@ class ExactException(Exception):
 
 class ExactAuthException(ExactException):
 	pass
+
+
+class ExactUnavailable(ExactException):
+	"""Exact answered with a 5xx. Retry later."""
 
 
 class DoesNotExist(Exception):
@@ -206,7 +233,7 @@ class Exact(object):
 		logger.debug("sending request: %s" % prepped.url)
 		response = self.requests_session.send(prepped)
 		if response.status_code != 200:
-			msg = "unexpected response while getting/refreshing token: %s" % response.text
+			msg = "unexpected response while getting/refreshing token: %s" % response.text[:500]
 			raise ExactAuthException(msg, response)
 		decoded = response.json()
 		session_obj.access_token = decoded["access_token"]
@@ -252,11 +279,12 @@ class Exact(object):
 				self._get_or_refresh_token(params, session_from_db)
 				self.session = session_from_db
 
+		except ExactAuthException:
+			raise
 		except Exception as e:
-			if isinstance(e, ExactAuthException):
-				raise
 			logger.error("unexpected error during token refresh: %s" % str(e))
-			raise ExactException("failed to refresh token due to network or db lock issue", e)
+			# the causing exception is chained (__cause__), there is no response
+			raise ExactException("failed to refresh token due to network or db lock issue", None) from e
 
 	def _send(self, method, resource, data=None, params=None):
 		# to test performance penalty of not using a requests session
@@ -286,8 +314,10 @@ class Exact(object):
 		# yes: the exact documentation does not mention 204; returned on PUT anyways
 		if response.status_code not in (200, 201, 204):
 			msg = "Unexpected status code received. Expected one of (200, 201, 204), got %d\n\n%s"
-			msg %= (response.status_code, response.text)
+			msg %= (response.status_code, response.text[:500])
 			logger.debug("%s\n%s" % (msg, response.text))
+			if response.status_code >= 500:
+				raise ExactUnavailable(msg, response)
 			raise ExactException(msg, response)
 
 		# don't try to decode json if we got nothing back

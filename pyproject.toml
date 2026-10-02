@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-exact"
-version = "0.9.0"
+version = "0.10.0"
 description = "API Wrapper and Django app for Exact Online"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -34,6 +34,7 @@ Repository = "https://github.com/affiliprint/django-exact"
 Issues = "https://github.com/affiliprint/django-exact/issues"
 
 [tool.setuptools.packages.find]
+include = ["exact*"]
 
 [tool.setuptools]
 include-package-data = true
