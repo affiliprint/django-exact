@@ -43,6 +43,25 @@ class ExactTest(TestCase):
 		session = Session.objects.get()
 		self.assertEqual((session.access_token, session.refresh_token), ("new-access", "new-refresh"))
 
+	def test_filter_refresh_on_401_on_next_page(self):
+		first_page = {"d": {"results": [{"ID": 1}], "__next": "https://exact.test/api/v1/1/crm/Accounts?$skiptoken=1"}}
+		self.mock_send(
+			make_response(200, first_page),
+			make_response(401),
+			make_response(200, TOKEN_OK),
+			make_response(200, {"d": {"results": [{"ID": 2}]}}),
+		)
+		self.assertEqual(list(self.api.filter("crm/Accounts")), [{"ID": 1}, {"ID": 2}])
+		self.assertEqual(Session.objects.get().access_token, "new-access")
+
+	def test_filter_error_on_next_page(self):
+		first_page = {"d": {"results": [{"ID": 1}], "__next": "https://exact.test/api/v1/1/crm/Accounts?$skiptoken=1"}}
+		error = {"error": {"code": "", "message": {"lang": "", "value": "Bad skiptoken"}}}
+		self.mock_send(make_response(200, first_page), make_response(400, error))
+		with self.assertRaises(ExactException) as cm:
+			list(self.api.filter("crm/Accounts"))
+		self.assertEqual(cm.exception.error_message, "Bad skiptoken")
+
 	def test_5xx_is_unavailable(self):
 		self.mock_send(make_response(503, "<html>maintenance</html>"))
 		with self.assertRaises(ExactUnavailable) as cm:
