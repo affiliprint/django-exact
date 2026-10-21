@@ -1,3 +1,11 @@
+0.10.1
+------
+
+- `filter()`: requests for the following pages (`__next`) now get a refreshed token on 401 and the
+  same status checks as all other requests. Before, an expired token during a long paginated read
+  was not refreshed and error responses ended in a `KeyError` (or `ExactUnavailable` for a 401
+  HTML page). Thanks to @Alex-Sichkar.
+
 0.10.0
 ------
 
