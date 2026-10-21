@@ -5,6 +5,9 @@
   same status checks as all other requests. Before, an expired token during a long paginated read
   was not refreshed and error responses ended in a `KeyError` (or `ExactUnavailable` for a 401
   HTML page). Thanks to @Alex-Sichkar.
+- `refresh_token()`: an access token refreshed by another process is only reused while it is still
+  valid; an expired one is refreshed (under the row lock). Before, the retry got a 401 and the call
+  failed. Thanks to @Alex-Sichkar.
 
 0.10.0
 ------
